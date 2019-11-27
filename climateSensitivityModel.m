@@ -1,5 +1,4 @@
 clc;
-
 % Read in data from a NetCDF file (name.nc)
   forcingFile='inputForcing.nc';
   %display the variables and metadata stored in the NetCDF file
