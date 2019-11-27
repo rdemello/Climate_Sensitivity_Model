@@ -19,6 +19,10 @@ F_solar = ncread(forcingFile,'Solar');
 F_volcanic = ncread(forcingFile,'Volcanic');
 Year = ncread(forcingFile,'Year');
 
+num_years = 161;
+secInYear = 60*60*24*365;
+timestep =  secInYear;
+
 F_total = zeros(num_years,1);
 
 F_RCPForcing = load('RCP8.5_Forcing.txt');
@@ -39,10 +43,6 @@ C_u = density*c_p*h_u; %thermal interia upper J/(m^2 K^1 s^1/2)
 C_d = density*c_p*h_d; %thermal interia deep J/(m^2 K^1 s^1/2)
 
 g = (2*k*c_p*density)/(h_u+h_d); %heat diffusion m2 * 1/s * J * 1/kg * 1/K * kg * 1/m3 * 1/m = J/m^2 * K * s
-
-num_years = 161;
-secInYear = 60*60*24*365;
-timestep =  secInYear;
 
 T_d = zeros(num_years,1); %empty array for deep temp
 T_u = zeros(num_years,1); %empty array for upper temp
