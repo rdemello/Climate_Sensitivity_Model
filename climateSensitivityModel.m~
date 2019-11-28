@@ -33,7 +33,7 @@ F_RCPForcing = load('RCP8.5_Forcing.txt');
 
 F_selected = F_RCPForcing;
 
-ECS = 1.5;          %climate sensitivity 
+ECS = .5;          %climate sensitivity 
 a = 3.74/ECS;       %defined alpha for climate feedback parameter
 
 density = 1027;     %"p" density of water in kg/m3
@@ -56,29 +56,23 @@ T_u = zeros(num_years,11); %empty array for upper temp
 for j = 1:11;
     for i = 1:num_years-1;
         upper_energy = timestep * (Forcing_Names(i,j) - (a*(T_u(i,j))) - (g*(T_u(i,j) - T_d(i,j))));  %solved from equation
-        T_u(i+1,j) = T_u(i,j) + upper_energy/C_u; 
+        T_u(i+1) = T_u(i) + upper_energy/C_u; 
 
-        deep_energy = timestep * g*(T_u(i,j) - T_d(i,j));
-        T_d(i+1,j) = T_d(i,j) + deep_energy/C_d;
+        deep_energy = timestep * g*(T_u(i) - T_d(i));
+        T_d(i+1) = T_d(i) + deep_energy/C_d;
     end
 end
 
 %% Plot Graph
 
 figure(1);
-plot(Year,T_u,'LineWidth',2);
-title('Temperature Variation on Upper Occean Based on Input Forcing','FontWeight','bold','FontSize',14);
+plot(Year,T_u,'c','LineWidth',2);
+title('Temperature Variation Based on RCP8.5 Forcing','FontWeight','bold','FontSize',14);
 ylabel('Temperature Variation','FontSize',12);
 xlabel('Year','FontWeight','bold','FontSize',12);
-legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
-
-figure(2);
-plot(Year,T_d,'LineWidth',2);
-title('Temperature Variation on Deep Occean Based on Input Forcing','FontWeight','bold','FontSize',14);
-ylabel('Temperature Variation','FontSize',12);
-xlabel('Year','FontWeight','bold','FontSize',12);
-legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
-
+hold all
+plot(Year,T_d,'b','LineWidth',2);
+legend('Upper Ocean','Deep Ocean');
 
 %% Old Equations
 
