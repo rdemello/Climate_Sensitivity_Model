@@ -19,21 +19,30 @@ F_solar = ncread(forcingFile,'Solar');
 F_volcanic = ncread(forcingFile,'Volcanic');
 Year = ncread(forcingFile,'Year');
 
-F_total = zeros(num_years,11);
+HadCRUT4_file=fopen('HadCRUT.txt'); 
+HadCRUT4_all=textscan(HadCRUT4_file,'%*d %f %*f %*f %*f %*f %*f %*f %*f %*f %f %f');
+HadCRUT4s_file=fopen('HadCRUTs.txt'); 
+HadCRUT4s_all=textscan(HadCRUT4s_file,'%*d %f %*f %*f %*f %*f %*f %*f %*f %*f %f %f');
+T_median = HadCRUT4_all{1,1}(1:161,1);
+T_medians = HadCRUT4s_all{1,1}(1:161,1);
+T_adjustedMedian = zeros(161,1);
 
-Forcing_Names = [ F_aerosolCloudLife F_ghg F_stratOzone F_tropOzone F_stratoWater F_aerosolDirect F_aerosolCloudAlbedo F_landUse F_snowAlbedo F_solar F_volcanic];
+for i=1:161
+   T_adjustedMedian(i) = (T_medians(i)-T_medians(1));
+end
 
 num_years = 161;
 secInYear = 60*60*24*365;
 timestep =  secInYear;
 
-
-
+Individual_Forcing = [ F_aerosolCloudLife F_ghg F_stratOzone F_tropOzone F_stratoWater F_aerosolDirect F_aerosolCloudAlbedo F_landUse F_snowAlbedo F_solar F_volcanic];
+F_total = sum(Individual_Forcing,2);
+F_allForcing = [Individual_Forcing F_total];
 F_RCPForcing = load('RCP8.5_Forcing.txt');
 
-F_selected = F_RCPForcing;
+F_selected = F_allForcing;
 
-ECS = 1.5;          %climate sensitivity 
+ECS = 1.1;          %climate sensitivity 
 a = 3.74/ECS;       %defined alpha for climate feedback parameter
 
 density = 1027;     %"p" density of water in kg/m3
@@ -48,14 +57,17 @@ C_d = density*c_p*h_d; %thermal interia deep J/(m^2 K^1 s^1/2)
 
 g = (2*k*c_p*density)/(h_u+h_d); %heat diffusion m2 * 1/s * J * 1/kg * 1/K * kg * 1/m3 * 1/m = J/m^2 * K * s
 
-T_d = zeros(num_years,11); %empty array for deep temp
-T_u = zeros(num_years,11); %empty array for upper temp
+T_d = zeros(num_years,12); %empty array for deep temp
+T_u = zeros(num_years,12); %empty array for upper temp
+
+%T_u(1,:)=T_median(1,1);
+%T_d(1,:)=T_median(1,1);
 
 %% Run Loop
 
-for j = 1:11;
-    for i = 1:num_years-1;
-        upper_energy = timestep * (Forcing_Names(i,j) - (a*(T_u(i,j))) - (g*(T_u(i,j) - T_d(i,j))));  %solved from equation
+for j = 1:12
+    for i = 1:num_years-1
+        upper_energy = timestep * (F_selected(i,j) - (a*(T_u(i,j))) - (g*(T_u(i,j) - T_d(i,j))));  %solved from equation
         T_u(i+1,j) = T_u(i,j) + upper_energy/C_u; 
 
         deep_energy = timestep * g*(T_u(i,j) - T_d(i,j));
@@ -66,18 +78,26 @@ end
 %% Plot Graph
 
 figure(1);
-plot(Year,T_u,'LineWidth',2);
-title('Temperature Variation on Upper Occean Based on Input Forcing','FontWeight','bold','FontSize',14);
+plot(Year,T_u(:,12),'LineWidth',2);
+title('Temperature Variation on Upper Ocean Based on Input Forcing','FontWeight','bold','FontSize',14);
 ylabel('Temperature Variation','FontSize',12);
 xlabel('Year','FontWeight','bold','FontSize',12);
-legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
+%legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
+hold all;
+plot(Year,T_adjustedMedian,'g','LineWidth',1);
+%plot(Year,T_medians,'g','LineWidth',1);
+plot(Year,T_u(:,1:11),'LineWidth',0.1);
+%plot(Year,T_d(:,12),'LineWidth',2);
 
-figure(2);
-plot(Year,T_d,'LineWidth',2);
-title('Temperature Variation on Deep Occean Based on Input Forcing','FontWeight','bold','FontSize',14);
-ylabel('Temperature Variation','FontSize',12);
-xlabel('Year','FontWeight','bold','FontSize',12);
-legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
+% % figure(2);
+% plot(Year,F_allForcing,'LineWidth',2);
+
+% figure(2);
+% plot(Year,T_d,'LineWidth',2);
+% title('Temperature Variation on Deep Ocean Based on Input Forcing','FontWeight','bold','FontSize',14);
+% ylabel('Temperature Variation','FontSize',12);
+% xlabel('Year','FontWeight','bold','FontSize',12);
+%legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
 
 
 %% Old Equations
