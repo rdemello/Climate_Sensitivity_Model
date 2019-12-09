@@ -2,6 +2,10 @@ clc;
   
 %% Define Variables
 
+arctic_depth = 1038;
+med_depth = 1500;
+
+
 forcingFile='inputForcing.nc';
 %ncdisp(forcingFile); %display all variables for the forcing file
   
@@ -41,44 +45,29 @@ F_allForcing = [Individual_Forcing F_total];
 F_RCPForcing = load('RCP8.5_Forcing.txt');
 
 F_selected = F_allForcing;
+h_d = 900;
+T_d = zeros(num_years,5); %empty array for deep temp
+T_u = zeros(num_years,5); %empty array for upper temp
 
-ECS = 1.1;          %climate sensitivity 
-a = 3.74/ECS;       %defined alpha for climate feedback parameter
-
-density = 1027;     %"p" density of water in kg/m3
-c_p = 4218;         %specific heat capacity of water J/kg/K
-
-k = 0.0001;         %vertical diffusivity m^2/s
-h_u = 100;         	%upper height m
-h_d = 900;         	%lower height m
-
-C_u = density*c_p*h_u; %thermal interia upper J/(m^2 K^1 s^1/2)
-C_d = density*c_p*h_d; %thermal interia deep J/(m^2 K^1 s^1/2)
-
-g = (2*k*c_p*density)/(h_u+h_d); %heat diffusion m2 * 1/s * J * 1/kg * 1/K * kg * 1/m3 * 1/m = J/m^2 * K * s
-
-T_d = zeros(num_years,12); %empty array for deep temp
-T_u = zeros(num_years,12); %empty array for upper temp
-
-%T_u(1,:)=T_median(1,1);
-%T_d(1,:)=T_median(1,1);
 
 %% Run Loop
+%     for j = 1:12
+%         for i = 1:num_years-1
+            %seaTempCalc(i,j,T_u,T_d,timestep,F_selected)
+            %upper_energy = timestep * (F_selected(i,j) - (a*(T_u(i,j))) - (g*(T_u(i,j) - T_d(i,j))));  %solved from equation
+            %T_u(i+1,j) = T_u(i,j) + upper_energy/C_u; 
 
-for j = 1:12
-    for i = 1:num_years-1
-        upper_energy = timestep * (F_selected(i,j) - (a*(T_u(i,j))) - (g*(T_u(i,j) - T_d(i,j))));  %solved from equation
-        T_u(i+1,j) = T_u(i,j) + upper_energy/C_u; 
+            %deep_energy = timestep * g*(T_u(i,j) - T_d(i,j));
+            %T_d(i+1,j) = T_d(i,j) + deep_energy/C_d;
+%         end
+%     end
 
-        deep_energy = timestep * g*(T_u(i,j) - T_d(i,j));
-        T_d(i+1,j) = T_d(i,j) + deep_energy/C_d;
-    end
-end
+seaTempCalc(T_u,T_d,num_years,timestep,F_selected,h_d);
 
 %% Plot Graph
 
 figure(1);
-plot(Year,T_u(:,12),'LineWidth',2);
+plot(Year,T_u(:,5),'LineWidth',2);
 title('Temperature Variation on Upper Ocean Based on Input Forcing','FontWeight','bold','FontSize',14);
 ylabel('Temperature Variation','FontSize',12);
 xlabel('Year','FontWeight','bold','FontSize',12);
@@ -86,7 +75,7 @@ xlabel('Year','FontWeight','bold','FontSize',12);
 hold all;
 plot(Year,T_adjustedMedian,'g','LineWidth',1);
 %plot(Year,T_medians,'g','LineWidth',1);
-plot(Year,T_u(:,1:11),'LineWidth',0.1);
+%plot(Year,T_u(:,1:11),'LineWidth',0.1);
 %plot(Year,T_d(:,12),'LineWidth',2);
 
 % % figure(2);
