@@ -2,84 +2,90 @@ clc;
   
 %% Define Variables
 
-arctic_depth = 1038;
-med_depth = 1500;
-
+med_depth = 1300;
+arctic_depth = 838;
+pacific_depth = 4080;
+atlantic_depth = 3139;
 
 forcingFile='inputForcing.nc';
-%ncdisp(forcingFile); %display all variables for the forcing file
-  
-% set variables for all forcings
-F_aerosolCloudLife = ncread(forcingFile,'Aerosol_cloud_lifetime');
-F_ghg = ncread(forcingFile,'Greenhouse_gases');
-F_stratOzone = ncread(forcingFile,'Strato_ozone');
-F_tropOzone = ncread(forcingFile,'Tropo_ozone');
-F_stratoWater = ncread(forcingFile,'Strato_water');
-F_aerosolDirect = ncread(forcingFile,'Aerosol_direct');
-F_aerosolCloudAlbedo = ncread(forcingFile,'Aerosol_cloud_albedo');
-F_landUse = ncread(forcingFile,'Land_use');
-F_snowAlbedo = ncread(forcingFile,'Snow_albedo');
-F_solar = ncread(forcingFile,'Solar');
-F_volcanic = ncread(forcingFile,'Volcanic');
 Year = ncread(forcingFile,'Year');
 
-HadCRUT4_file=fopen('HadCRUT.txt'); 
-HadCRUT4_all=textscan(HadCRUT4_file,'%*d %f %*f %*f %*f %*f %*f %*f %*f %*f %f %f');
-HadCRUT4s_file=fopen('HadCRUTs.txt'); 
-HadCRUT4s_all=textscan(HadCRUT4s_file,'%*d %f %*f %*f %*f %*f %*f %*f %*f %*f %f %f');
-T_median = HadCRUT4_all{1,1}(1:161,1);
-T_medians = HadCRUT4s_all{1,1}(1:161,1);
-T_adjustedMedian = zeros(161,1);
+F_selected = forcing();
+F_noVolcano = noVolcano()
 
-for i=1:161
-   T_adjustedMedian(i) = (T_medians(i)-T_medians(1));
-end
-
-num_years = 161;
-secInYear = 60*60*24*365;
-timestep =  secInYear;
-
-Individual_Forcing = [ F_aerosolCloudLife F_ghg F_stratOzone F_tropOzone F_stratoWater F_aerosolDirect F_aerosolCloudAlbedo F_landUse F_snowAlbedo F_solar F_volcanic];
-F_total = sum(Individual_Forcing,2);
-F_allForcing = [Individual_Forcing F_total];
-F_RCPForcing = load('RCP8.5_Forcing.txt');
-
-F_selected = F_allForcing;
-h_d = 900;
-T_d = zeros(num_years,5); %empty array for deep temp
-T_u = zeros(num_years,5); %empty array for upper temp
-
+% HadCRUT4_file=fopen('HadCRUT.txt'); 
+% HadCRUT4_all=textscan(HadCRUT4_file,'%*d %f %*f %*f %*f %*f %*f %*f %*f %*f %f %f');
+% HadCRUT4s_file=fopen('HadCRUTs.txt'); 
+% HadCRUT4s_all=textscan(HadCRUT4s_file,'%*d %f %*f %*f %*f %*f %*f %*f %*f %*f %f %f');
+% T_median = HadCRUT4_all{1,1}(1:161,1);
+% T_medians = HadCRUT4s_all{1,1}(1:161,1);
+% T_adjustedMedian = zeros(161,1);
+% 
+% for i=1:161
+%    T_adjustedMedian(i) = (T_medians(i)-T_medians(1));
+% end
 
 %% Run Loop
-%     for j = 1:12
-%         for i = 1:num_years-1
-            %seaTempCalc(i,j,T_u,T_d,timestep,F_selected)
-            %upper_energy = timestep * (F_selected(i,j) - (a*(T_u(i,j))) - (g*(T_u(i,j) - T_d(i,j))));  %solved from equation
-            %T_u(i+1,j) = T_u(i,j) + upper_energy/C_u; 
 
-            %deep_energy = timestep * g*(T_u(i,j) - T_d(i,j));
-            %T_d(i+1,j) = T_d(i,j) + deep_energy/C_d;
-%         end
-%     end
+T_med = seaTempCalc(F_selected,med_depth);
+T_pacific = seaTempCalc(F_selected,pacific_depth);
+T_arctic = seaTempCalc(F_selected,arctic_depth);
+T_atlantic = seaTempCalc(F_selected,atlantic_depth);
 
-seaTempCalc(T_u,T_d,num_years,timestep,F_selected,h_d);
+T_upper_all = [T_med(:,1),T_arctic(:,1),T_atlantic(:,1),T_pacific(:,1)];
+T_deep_all = [T_med(:,2),T_arctic(:,2),T_atlantic(:,2),T_pacific(:,2)];
+
+T_med_nv = seaTempCalc(F_noVolcano,med_depth);
+T_pacific_nv = seaTempCalc(F_noVolcano,pacific_depth);
+T_arctic_nv = seaTempCalc(F_noVolcano,arctic_depth);
+T_atlantic_nv = seaTempCalc(F_noVolcano,atlantic_depth);
+
+T_upper_all_nv = [T_med_nv(:,1),T_arctic_nv(:,1),T_atlantic_nv(:,1),T_pacific_nv(:,1)];
+T_deep_all_nv = [T_med_nv(:,2),T_arctic_nv(:,2),T_atlantic_nv(:,2),T_pacific_nv(:,2)];
 
 %% Plot Graph
 
 figure(1);
-plot(Year,T_u(:,5),'LineWidth',2);
-title('Temperature Variation on Upper Ocean Based on Input Forcing','FontWeight','bold','FontSize',14);
+plot(Year,T_upper_all,'LineWidth',2);
+title('Temperature Variation on Upper Ocean Based at different Ocean depths','FontWeight','bold','FontSize',14);
 ylabel('Temperature Variation','FontSize',12);
 xlabel('Year','FontWeight','bold','FontSize',12);
 %legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
+legend('Med', 'Arctic', 'Atlantic', 'Pacific')
 hold all;
-plot(Year,T_adjustedMedian,'g','LineWidth',1);
+%plot(Year,T_adjustedMedian,'g','LineWidth',1);
 %plot(Year,T_medians,'g','LineWidth',1);
 %plot(Year,T_u(:,1:11),'LineWidth',0.1);
-%plot(Year,T_d(:,12),'LineWidth',2);
+%plot(Year,T_d(:,5),'LineWidth',2);
 
-% % figure(2);
-% plot(Year,F_allForcing,'LineWidth',2);
+figure(2);
+plot(Year,T_deep_all,'LineWidth',2);
+title('Temperature Variation on Deep Ocean Based at different Ocean depths','FontWeight','bold','FontSize',14);
+ylabel('Temperature Variation','FontSize',12);
+xlabel('Year','FontWeight','bold','FontSize',12);
+legend('Med', 'Arctic', 'Atlantic', 'Pacific')
+
+
+figure(3);
+plot(Year,F_selected,'LineWidth',2);
+title('Input Forcings','FontWeight','bold','FontSize',14);
+legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
+
+figure(4);
+plot(Year,T_upper_all_nv,'LineWidth',2);
+title('Temperature Variation on Upper Ocean Based with different Ocean depths without Volcanic Forcing','FontWeight','bold','FontSize',14);
+ylabel('Temperature Variation','FontSize',12);
+xlabel('Year','FontWeight','bold','FontSize',12);
+%legend('AerosolCloudLife', 'ghg', 'stratOzone', 'tropOzone', 'stratoWater', 'aerosolDirect', 'aerosolCloudAlbedo', 'landUse', 'snowAlbedo', 'solar', 'volcanic');
+legend('Med', 'Arctic', 'Atlantic', 'Pacific')
+
+
+figure(5);
+plot(Year,T_deep_all_nv,'LineWidth',2);
+title('Temperature Variation on Deep Ocean Based with different Ocean depths without Volcanic Forcing','FontWeight','bold','FontSize',14);
+ylabel('Temperature Variation','FontSize',12);
+xlabel('Year','FontWeight','bold','FontSize',12);
+legend('Med', 'Arctic', 'Atlantic', 'Pacific')
 
 % figure(2);
 % plot(Year,T_d,'LineWidth',2);
